@@ -2,13 +2,22 @@
 #define MESSAGE_H
 
 #include <time.h>
+#include "const.h"
 
 // Struct for a single message
+
+typedef enum MessageType {
+    CLOSE,
+    CONNECT,
+    MESSAGE,
+    ERROR
+} MessageType;
+
 typedef struct Message {
+    MessageType type;
     time_t timestamp;
-    const char* sender;
-    const char* receiver;
-    const char* content;
+    char sender[MAX_USERNAME_LENGTH];
+    char content[MAX_MESSAGE_LENGTH];
     struct Message* prev;
     struct Message* next;
 } Message;
@@ -19,18 +28,17 @@ typedef struct MessageList {
     Message* tail;
 } MessageList;
 
+extern Message* LastMessage;
+extern char sender[MAX_USERNAME_LENGTH];
+
 // Function to create a new message
-Message* createMessage(int id, const char* sender, const char* receiver, const char* content);
+Message* makeMessage(MessageType type, const char* content);
 
 // Function to add a message to the message list
-void addMessage(MessageList* list, Message* message);
+void sendMessage(MessageList* list, int srv_socket, Message* message);
 
-// Function to remove a message from the message list
-void removeMessage(MessageList* list, Message* message);
+void toString(MessageList* list);
 
-// Function to print all messages in the message list
-void printMessages(MessageList* list);
-
-void LoadMessages(MessageList* list);
+void handle_message(Message* message);
 
 #endif /* MESSAGE_H */

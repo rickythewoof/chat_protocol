@@ -1,6 +1,10 @@
+#ifndef CONST_H
+#define CONST_H
+
 #define SERVER_PORT 8080
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 10
 #define MAX_USERNAME_LENGTH 20
 #define MAX_MESSAGE_LENGTH 100
 
+#endif /* CONST_H */

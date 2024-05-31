@@ -5,23 +5,43 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "common/const.h"
+#include "common/message.h"
 #include <signal.h>
 
 int client_socket;
+MessageList list;
+
+void handle_message(Message* message){
+    switch (message->type){
+        case(CLOSE):
+            printf("User %s disconnected\n", message->sender);
+            break;
+        case(CONNECT):
+            printf("User %s connected\n", message->sender);
+            break;
+        case(MESSAGE):
+            printf("@%s: %s\n", message->sender, message->content);
+            break;
+    }
+}
+
+void close_connection(int client_socket) {
+    Message* close_message = makeMessage(CLOSE, sender, "", "");
+    sendMessage(&list, client_socket, close_message);
+    close(client_socket);
+}
 
 void handle_connection(int client_socket, const char *user_name) {
-    char buffer[BUFFER_SIZE] = {0};
-    char message[BUFFER_SIZE] = {0};
-
     // Send user name to server
-    send(client_socket, user_name, strlen(user_name), 0);
-
+    Message* connect_message = makeMessage(CONNECT, user_name, "", "");
+    send(client_socket, connect_message, sizeof(Message), 0);
     while (1) {
         // Get user input
+        char contents[MAX_MESSAGE_LENGTH];
         printf("Enter message: ");
-        fgets(message, BUFFER_SIZE, stdin);
-        message[strcspn(message, "\n")] = 0;
-
+        fgets(contents, MAX_MESSAGE_LENGTH, stdin);
+        contents[strcspn(contents, "\n")] = 0;
+        message = makeMessage(MESSAGE, sender, contents)
         // Send message to server
         send(client_socket, message, strlen(message), 0);
 
@@ -45,6 +65,11 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <server_ip> <user_name>\n", argv[0]);
         return 1;
     }
+    if(strlen(argv[2]) > MAX_USERNAME_LENGTH){
+        printf("Username too long\n");
+        return 1;
+    }
+    strncpy(sender, argv[2], MAX_USERNAME_LENGTH);
     struct sigaction sa = {0};
     sa.sa_handler = sigint_handler;
     sigemptyset(&sa.sa_mask);
@@ -75,7 +100,7 @@ int main(int argc, char *argv[]) {
         perror("Failed to connect to server");
         return 1;
     }
-
+    
     handle_connection(client_socket, argv[2]);
 
     // Close the socket
